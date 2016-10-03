@@ -18,17 +18,33 @@ module.exports = function(path, params, callback){
   }
 
   if (getContext() === 'server' || getXHR()) {
-    request
+    if (typeof $ !== 'undefined' && 'ajax' in $) {
+      $.ajax({
+        method: 'post',
+        url: url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': this.client.readKey()
+        },
+        data: JSON.stringify(params || {}),
+      }).done(function(data){
+        handleResponse(null, data);
+      }).fail(function(error){
+        handleResponse(error, null);
+      });
+    } else {
+      request
       .post(url)
         .set('Content-Type', 'application/json')
         .set('Authorization', this.client.readKey())
         .timeout(this.timeout())
         .send(params || {})
         .end(handleResponse);
+    }
   }
 
   function handleResponse(err, res){
-    responseHandler(err, res, callback);
+    callback(err, res);
     callback = null;
   }
 
